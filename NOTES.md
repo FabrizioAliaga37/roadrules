@@ -104,3 +104,45 @@
 - Applied: Jurisdictions. **To do in steps 11-12:** the guide's new tables (`<table class="table">` at the history, comparison and admin steps) need the same wrapper.
 - Checked: with 45 jurisdictions, and a 60-row Bootstrap table on a test page that isn't committed, at 1440px and 390px: after scrolling the table, the header stays in place and is the top element at that spot.
 
+## Evening 3 - SQLite to SQL Server, Dockerfile, README
+
+**7a. Extra rows and baseline**
+- Inserted Ids 16-25 into App_Data/roadrules.db with the sqlite3 CLI (installed now: `apt install sqlite3`, 3.45.1).
+- Baseline (SQLite): **25 rows, SUM(MaxKg) = 416,350, 5 jurisdictions.** This matches the figure worked out from the guide's data.
+
+**sqlite3 dump has no quotes and no column list**
+- Saw: `.mode insert AxleLimits` gives `INSERT INTO AxleLimits VALUES(16,1,'Single',1,9500,'2026-07-01');`. The guide says names come out in double quotes; with 3.45 they don't, and there is no column list either.
+- Why it matters: SQL Server only allows explicit identity values with IDENTITY_INSERT ON and a column list ("An explicit value for the identity column ... can only be specified when a column list is used and IDENTITY_INSERT is ON").
+- Fix: extra_rows.sql now has the column list, `SET IDENTITY_INSERT AxleLimits ON/OFF`, and the reconcile queries at the end. Dates stay as ISO strings, which SQL Server converts to `date`.
+
+**7c. Provider switch**
+- Added Microsoft.EntityFrameworkCore.SqlServer 8.0.33 (pinned to match, as with Sqlite on evening 1), changed UseSqlite to UseSqlServer, and set the connection string from the guide.
+- Removed the `App_Data` folder creation from Program.cs, which was SQLite-only. The Sqlite package stays for now; nothing uses it.
+- Deleted Migrations/ and regenerated `InitialSqlServer`. Differences from the SQLite migration:
+  1. `EffectiveFrom` is `date` (was `TEXT`).
+  2. Ids use `.Annotation("SqlServer:Identity", "1, 1")` (was `Sqlite:Autoincrement`, type `INTEGER`).
+  3. `Code` is `nvarchar(450)`, the others `nvarchar(max)`. Code has the unique index, and SQL Server can't index `max` columns (900-byte key limit).
+- `dotnet ef` warns that tools 8.0.31 are older than runtime 8.0.33 (same as evening 1); harmless.
+
+**8. Dockerfile**
+- Multi-stage as in the guide (sdk:8.0 build, aspnet:8.0 runtime, port 8080). The publish output includes wwwroot/RoadRules.styles.css, so the CSS problem from evening 2 can't happen in the container.
+- The guide's .dockerignore `*.db` only matches the root of the build context (unlike .gitignore), so RoadRules/App_Data/roadrules.db would have gone into the image. Changed to `**/*.db` (plus -shm/-wal and `**/*.user`).
+
+**Environment**
+- The dev shell (WSL) is itself a container with no Docker CLI, so steps 7b, 7d-7f and the container run were done from Windows (Docker Desktop).
+
+**7b-7f and 8 results (from the Windows run)**
+- SQL Server container up: yes. `mcr.microsoft.com/mssql/server:2022-latest` pulled and started as roadrules-sql on Docker Desktop (Windows).
+- Migration applied (InitialSqlServer, 15 seeded rows): yes. The app started against SQL Server and Migrate() created the database on first run.
+- extra_rows.sql run: `docker cp extra_rows.sql roadrules-sql:/tmp/` then `sqlcmd ... -i /tmp/extra_rows.sql`. The guide's `-i /dev/stdin < extra_rows.sql` is bash only; PowerShell has no `<` redirect. Its output wasn't saved, but the reconcile below shows all 10 rows arrived.
+- Reconcile against SQL Server: **COUNT 25, SUM(MaxKg) 416,350, Jurisdictions 5**, identical to the SQLite baseline. Nothing lost or duplicated.
+- Spot check, field by field, both match the inserted values:
+  - `16 | 1 | Single | 1 | 9500 | 2026-07-01`
+  - `25 | 4 | Tridem | 3 | 24100 | 2026-07-01`
+  - EffectiveFrom shows as a real `date`. sqlcmd prints AxleGroup very wide because it is `nvarchar(max)`.
+- App on SQL Server, Ontario + 2 axles: **first run showed 17,500, not the 17,000 the guide expects.**
+  - Why: Ontario now has two tandem rows (Id 2: 17,000 from 2026-01-01; Id 17: 17,500 from 2026-07-01). EfLimitSource only did `OrderBy(AxleCount)`, and WeightCalculator takes the first match. Ties come back in no guaranteed order: SQLite returned insert order (17,000), SQL Server returned 17,500 first. So the guide's "still returns 17,000" relied on undefined ordering.
+  - Fix: `.ThenBy(l => l.EffectiveFrom)` in EfLimitSource (the line step 11 adds anyway), so the oldest row comes first and the result is the same every time. It still ignores dates, which is the deliberate gap step 11 closes.
+  - After the fix: Ontario + 2 axles shows **17,000 kg** (≈ 37,479 lb), as the guide expects.
+- docker build / run: the image built and ran with the connection string passed as `ConnectionStrings__Default` (host.docker.internal,1433). At http://localhost:8080/calculator, Ontario + 2 axles shows **17,000 kg**, so the container reaches SQL Server in the other container and the migration ran on startup.
+

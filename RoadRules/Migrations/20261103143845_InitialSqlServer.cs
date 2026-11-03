@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace RoadRules.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class InitialSqlServer : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -17,10 +17,10 @@ namespace RoadRules.Migrations
                 name: "Jurisdictions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Code = table.Column<string>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Code = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -31,13 +31,13 @@ namespace RoadRules.Migrations
                 name: "AxleLimits",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    JurisdictionId = table.Column<int>(type: "INTEGER", nullable: false),
-                    AxleGroup = table.Column<string>(type: "TEXT", nullable: false),
-                    AxleCount = table.Column<int>(type: "INTEGER", nullable: false),
-                    MaxKg = table.Column<int>(type: "INTEGER", nullable: false),
-                    EffectiveFrom = table.Column<DateOnly>(type: "TEXT", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    JurisdictionId = table.Column<int>(type: "int", nullable: false),
+                    AxleGroup = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AxleCount = table.Column<int>(type: "int", nullable: false),
+                    MaxKg = table.Column<int>(type: "int", nullable: false),
+                    EffectiveFrom = table.Column<DateOnly>(type: "date", nullable: false)
                 },
                 constraints: table =>
                 {
