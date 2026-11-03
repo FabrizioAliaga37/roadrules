@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.git/
+# The guide has "*.db", but .dockerignore patterns are anchored at the context root,
+# so that would not match RoadRules/App_Data/roadrules.db. "**/" makes it match anywhere.
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/*.user

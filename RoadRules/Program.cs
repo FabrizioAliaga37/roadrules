@@ -20,15 +20,13 @@ builder.Services.AddRazorComponents()
 // would live for the whole user circuit; a factory gives each operation a
 // short-lived context.
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddScoped<ILimitSource, EfLimitSource>();
 builder.Services.AddScoped<IWeightCalculator, WeightCalculator>();
 
 var app = builder.Build();
 
-// SQLite creates the .db file but not its folder, so make sure App_Data exists.
-Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "App_Data"));
 
 // Apply migrations on startup. Fine for a toy; in production migrations
 // would run from the pipeline, not from the app.
