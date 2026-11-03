@@ -1,0 +1,17 @@
+/RoadRules.Tests/bin
+*.Up2Date
+/RoadRules.Tests/obj
+/RoadRules/bin
+/RoadRules/obj
+
+# SQLite database (local dev data, not source)
+*.db
+*.db-shm
+*.db-wal
+
+# IDE / user files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo

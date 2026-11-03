@@ -1,0 +1,43 @@
+@page "/jurisdictions"
+@using Microsoft.EntityFrameworkCore
+@using RoadRules.Data
+@inject IDbContextFactory<AppDbContext> DbFactory
+
+<PageTitle>Jurisdictions</PageTitle>
+<h3>Jurisdictions</h3>
+
+@if (jurisdictions is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr><th>Code</th><th>Name</th><th>Limits defined</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var j in jurisdictions)
+            {
+                <tr @key="j.Id">
+                    <td>@j.Code</td>
+                    <td>@j.Name</td>
+                    <td>@j.Limits.Count</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Jurisdiction>? jurisdictions;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        jurisdictions = await db.Jurisdictions
+            .Include(j => j.Limits)
+            .OrderBy(j => j.Code)
+            .ToListAsync();
+    }
+}
