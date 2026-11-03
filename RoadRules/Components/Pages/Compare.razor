@@ -1,0 +1,124 @@
+@page "/compare"
+@using Microsoft.EntityFrameworkCore
+@using RoadRules.Data
+@using RoadRules.Services
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject IWeightCalculator Calculator
+
+<PageTitle>Compare jurisdictions</PageTitle>
+
+<div class="rr-page-header">
+    <div>
+        <div class="rr-eyebrow">Reference</div>
+        <h1 class="rr-title">Compare jurisdictions</h1>
+        <p class="rr-subtitle">The limit in effect for each axle group, side by side, on the date you choose.</p>
+    </div>
+</div>
+
+<div class="rr-card rr-card-body mb-3 rr-fade">
+    <div class="d-flex flex-wrap align-items-end gap-3">
+        <div style="min-width: 14rem">
+            <label class="form-label" for="compare-asof">As of</label>
+            <InputDate id="compare-asof" class="form-control" @bind-Value="asOf" @bind-Value:after="LoadAsync" />
+        </div>
+        <div class="rr-segment rr-segment-inline" role="group" aria-label="Quick dates">
+            @foreach (var (label, date) in Presets)
+            {
+                <button type="button" class="@(asOf == date ? "active" : null)" aria-pressed="@(asOf == date)"
+                        @onclick="() => SetDate(date)">
+                    @label
+                    <small>@date.ToString("yyyy-MM-dd")</small>
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="rr-card">
+    @if (rows is null)
+    {
+        <div class="rr-empty">
+            <div class="spinner-border text-secondary" role="status"></div>
+            <div class="mt-3">Loading...</div>
+        </div>
+    }
+    else
+    {
+        <div class="rr-table-wrap">
+            <table class="rr-table">
+                <thead>
+                    <tr>
+                        <th>Jurisdiction</th>
+                        <th class="text-end">Single (kg)</th>
+                        <th class="text-end">Tandem (kg)</th>
+                        <th class="text-end">Tridem (kg)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in rows)
+                    {
+                        <tr @key="r.Code">
+                            <td>
+                                <a href="history/@r.Code" class="d-inline-flex align-items-center gap-2 text-decoration-none">
+                                    <span class="rr-code">@r.Code</span>
+                                    <span class="rr-name text-body">@r.Name</span>
+                                </a>
+                            </td>
+                            @for (var axles = 1; axles <= 3; axles++)
+                            {
+                                var limit = r.Limits.FirstOrDefault(l => l.AxleCount == axles);
+                                <td class="text-end">
+                                    @if (limit is null)
+                                    {
+                                        <span class="text-muted">–</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="rr-num">@limit.MaxKg.ToString("N0")</span>
+                                        <small class="d-block text-muted">since @limit.EffectiveFrom.ToString("yyyy-MM-dd")</small>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.Today);
+
+    // The two dates the guide uses to check this page, plus today.
+    private static readonly (string Label, DateOnly Date)[] Presets =
+        [("Before July change", new DateOnly(2026, 3, 1)), ("After July change", new DateOnly(2026, 8, 1)), ("Today", Today)];
+
+    private DateOnly asOf = Today;
+    private List<Row>? rows;
+
+    private record Row(string Code, string Name, IReadOnlyList<LimitRecord> Limits);
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task SetDate(DateOnly date)
+    {
+        asOf = date;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var jurisdictions = await db.Jurisdictions.OrderBy(j => j.Name).ToListAsync();
+        var list = new List<Row>();
+        foreach (var j in jurisdictions)
+        {
+            IReadOnlyList<LimitRecord> limits;
+            try { limits = await Calculator.EffectiveLimitsAsync(j.Code, asOf); }
+            catch (KeyNotFoundException) { limits = Array.Empty<LimitRecord>(); }
+            list.Add(new Row(j.Code, j.Name, limits));
+        }
+        rows = list;
+    }
+}

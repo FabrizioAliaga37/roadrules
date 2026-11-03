@@ -1,4 +1,4 @@
-﻿/* ---------- Design tokens ---------- */
+/* ---------- Design tokens ---------- */
 :root {
     --rr-bg: #f5f7fb;
     --rr-surface: #ffffff;
@@ -538,6 +538,21 @@ h1:focus {
             border-color: var(--rr-primary);
             box-shadow: inset 0 0 0 1px var(--rr-primary);
         }
+
+.rr-segment-inline {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 0;
+}
+
+    .rr-segment-inline button {
+        min-width: 9.5rem;
+    }
+
+.rr-num {
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
 
 .rr-axle-dots {
     display: flex;

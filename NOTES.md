@@ -146,3 +146,33 @@
   - After the fix: Ontario + 2 axles shows **17,000 kg** (≈ 37,479 lb), as the guide expects.
 - docker build / run: the image built and ran with the connection string passed as `ConnectionStrings__Default` (host.docker.internal,1433). At http://localhost:8080/calculator, Ontario + 2 axles shows **17,000 kg**, so the container reaches SQL Server in the other container and the migration ran on startup.
 
+## Evening 4 - effective-dated limits, history, comparison (steps 11-12)
+
+**11a-11b. The rule moved into the calculator**
+- `LimitRecord` and `WeightResult` carry `EffectiveFrom`. `ILimitSource.GetAllLimitsAsync` returns every row, history included, and selects nothing.
+- `WeightCalculator.EffectiveLimitsAsync`: per axle group, the latest row with `EffectiveFrom <= asOf`. `CalculateAsync` takes an as-of date and uses it.
+- Design note: with a table this size, loading one jurisdiction's rows and selecting in C# is the right trade, because the rule can be tested without SQL. For a large table the selection would go into the database, with `ROW_NUMBER() OVER (PARTITION BY AxleCount ORDER BY EffectiveFrom DESC)` or a filtered query per group.
+- The evening 3 `.ThenBy(EffectiveFrom)` fix is now the guide's own line. Ordering no longer decides the result, because the rule picks by date.
+- No migration: `dotnet ef migrations has-pending-model-changes` says "No changes have been made to the model since the last migration". EffectiveFrom was in the model from the start.
+
+**11c. Calculator**
+- "As of" date (InputDate, defaults to today). The result shows the date asked, "in effect since", and a link to that jurisdiction's history.
+- The date box shows in the browser's locale (07/01/2026 here); the page shows dates as yyyy-MM-dd.
+
+**11d. History page** (`/history/{Code}`)
+- `OnParametersSetAsync`, not `OnInitializedAsync`: going from /history/ON to /history/QC keeps the same component and only changes the parameter. Checked: Blazor.navigateTo from ON to QC reloads the rows.
+- Added beyond the guide: a status per row (In effect / Superseded / Scheduled), using `EffectiveLimitsAsync(Code, today)` so the rule isn't written twice; an empty state for an unknown code (/history/ZZ); and links from the Jurisdictions page (code badge and a "View history" button).
+
+**12. Comparison page** (`/compare`)
+- As in the guide: jurisdictions as rows, axle groups as columns, `@bind-Value:after="LoadAsync"` on the date. Added preset buttons for the guide's two check dates and today, and "since <date>" under each value.
+- Both new tables use `.rr-table-wrap` (fixed header), the to-do from evening 2.
+
+**11e. Tests: 10 passing**
+- The 6 original tests pass `new DateOnly(2026, 3, 1)`. FakeLimitSource has dates plus Ontario's July tandem row. EffectiveDateTests adds 4: 2026-03-01 gives 17,000, 2026-07-01 gives 17,500, 2026-12-31 gives 17,500, and 2025-06-01 throws.
+
+**Checked in a browser**
+- WSL can't reach SQL Server, so this ran on a scratch copy switched to SQLite (EnsureCreated), loaded with the same 25 rows (SUM 416,350). The project itself stays on SQL Server.
+- Compare: today and 2026-08-01 show Ontario tandem 17,500 (since 2026-07-01); 2026-03-01 shows 17,000 (since 2026-01-01); 2025-06-01 shows "–". The same results when the date is typed instead of picked.
+- Calculator, Ontario with 2 axles: 2026-03-01 gives 17,000, 2026-07-01 and 2026-12-31 give 17,500, and 2025-06-01 gives "No limit is in effect for 2 axles in ON on 2025-06-01."
+- History ON: July rows In effect, January rows Superseded, Tridem 24,000 In effect. No error bar and no failed requests.
+

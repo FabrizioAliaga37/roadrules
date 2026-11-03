@@ -1,0 +1,96 @@
+@page "/history/{Code}"
+@using Microsoft.EntityFrameworkCore
+@using RoadRules.Data
+@using RoadRules.Services
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject IWeightCalculator Calc
+
+<PageTitle>Limit history for @Code</PageTitle>
+
+<div class="rr-page-header">
+    <div>
+        <div class="rr-eyebrow"><a href="jurisdictions" class="text-decoration-none">Jurisdictions</a> / @Code</div>
+        <h1 class="rr-title">Limit history for @(name ?? Code)</h1>
+        <p class="rr-subtitle">Every limit on record, newest first within each axle group. Status is as of today (@today.ToString("yyyy-MM-dd")).</p>
+    </div>
+    <a href="compare" class="btn btn-outline-primary">Compare jurisdictions</a>
+</div>
+
+<div class="rr-card rr-fade">
+    @if (rows is null)
+    {
+        <div class="rr-empty">
+            <div class="spinner-border text-secondary" role="status"></div>
+            <div class="mt-3">Loading...</div>
+        </div>
+    }
+    else if (rows.Count == 0)
+    {
+        <div class="rr-empty">
+            <strong>No limits for "@Code"</strong>
+            <span class="mt-1">There is no jurisdiction with this code, or it has no limits yet.</span>
+            <a href="jurisdictions" class="btn btn-primary mt-3">Back to jurisdictions</a>
+        </div>
+    }
+    else
+    {
+        <div class="rr-table-wrap">
+            <table class="rr-table">
+                <thead>
+                    <tr><th>Axle group</th><th class="text-end">Max kg</th><th>Effective from</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in rows)
+                    {
+                        <tr @key="r.Id">
+                            <td class="rr-name">@r.AxleGroup</td>
+                            <td class="text-end">@r.MaxKg.ToString("N0")</td>
+                            <td>@r.EffectiveFrom.ToString("yyyy-MM-dd")</td>
+                            <td>
+                                @if (r.EffectiveFrom > today)
+                                {
+                                    <span class="rr-pill rr-pill-primary"><span class="rr-dot"></span>Scheduled</span>
+                                }
+                                else if (current.Contains((r.AxleCount, r.EffectiveFrom)))
+                                {
+                                    <span class="rr-pill rr-pill-success"><span class="rr-dot"></span>In effect</span>
+                                }
+                                else
+                                {
+                                    <span class="rr-pill">Superseded</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Code { get; set; } = "";
+
+    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+    private List<AxleLimit>? rows;
+    private string? name;
+    // (AxleCount, EffectiveFrom) of the row in effect today for each group, from the calculator's rule.
+    private HashSet<(int, DateOnly)> current = new();
+
+    // OnParametersSetAsync, not OnInitializedAsync: the route parameter can change while the
+    // component stays mounted (navigating from /history/ON to /history/QC).
+    protected override async Task OnParametersSetAsync()
+    {
+        rows = null;
+        await using var db = await DbFactory.CreateDbContextAsync();
+        name = await db.Jurisdictions.Where(j => j.Code == Code).Select(j => j.Name).FirstOrDefaultAsync();
+        rows = await db.AxleLimits
+            .Where(l => l.Jurisdiction!.Code == Code)
+            .OrderBy(l => l.AxleCount).ThenByDescending(l => l.EffectiveFrom)
+            .ToListAsync();
+
+        current = rows.Count == 0
+            ? new()
+            : (await Calc.EffectiveLimitsAsync(Code, today)).Select(l => (l.AxleCount, l.EffectiveFrom)).ToHashSet();
+    }
+}
