@@ -1,30 +1,38 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">RoadRules</a>
+<div class="rr-navmenu">
+    <a class="rr-brand" href="">
+        <span class="rr-logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M2.5 6.5h11v9h-11z" /><path d="M13.5 9.5h4l3.5 3.5v2.5h-7.5" /><circle cx="6.5" cy="17.5" r="2" /><circle cx="17" cy="17.5" r="2" /></svg>
+        </span>
+        <span class="rr-brand-text">
+            <strong>RoadRules</strong>
+            <small>Axle weight limits</small>
+        </span>
+    </a>
+
+    <input type="checkbox" title="Navigation menu" class="rr-toggler" />
+
+    <div class="rr-nav-wrap" onclick="document.querySelector('.rr-toggler').click()">
+        <nav class="rr-nav">
+            <div class="rr-nav-label">Menu</div>
+
+            <NavLink class="rr-link" href="" Match="NavLinkMatch.All">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3.5l8.5 7V20a1 1 0 0 1-1 1H15v-6H9v6H4.5a1 1 0 0 1-1-1z" /></svg>
+                <span>Overview</span>
+            </NavLink>
+
+            <NavLink class="rr-link" href="jurisdictions">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5 3.5 6.5v13l5.5-2 6 2 5.5-2v-13l-5.5 2z" /><path d="M9 4.5v13M15 6.5v13" /></svg>
+                <span>Jurisdictions</span>
+            </NavLink>
+
+            <NavLink class="rr-link" href="calculator">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="2.5" /><path d="M8.5 6.5h7M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01" /></svg>
+                <span>Calculator</span>
+            </NavLink>
+        </nav>
+
+        <div class="rr-nav-foot">
+            Illustrative numbers only.<br />Not real axle limits.
+        </div>
     </div>
 </div>
-
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="jurisdictions">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Jurisdictions
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="calculator">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Calculator
-            </NavLink>
-        </div>
-    </nav>
-</div>
-

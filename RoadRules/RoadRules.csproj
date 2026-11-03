@@ -14,4 +14,13 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.33" />
   </ItemGroup>
 
+  <!-- Fixed CSS isolation scope ids. By default the id is a hash that comes out
+       different on Windows and Linux/WSL, so a build from one side reusing obj/ from
+       the other leaves the .dll and RoadRules.styles.css with mismatched ids
+       (no sidebar, and the hidden error bar shows). -->
+  <ItemGroup>
+    <None Update="Components\Layout\MainLayout.razor.css" CssScope="rr-main-layout" />
+    <None Update="Components\Layout\NavMenu.razor.css" CssScope="rr-nav-menu" />
+  </ItemGroup>
+
 </Project>

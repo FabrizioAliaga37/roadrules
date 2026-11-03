@@ -1,7 +1,83 @@
-﻿@page "/"
+@page "/"
+@using Microsoft.EntityFrameworkCore
+@using RoadRules.Data
+@inject IDbContextFactory<AppDbContext> DbFactory
 
-<PageTitle>Home</PageTitle>
+<PageTitle>RoadRules</PageTitle>
 
-<h1>Hello, world!</h1>
+<section class="rr-hero rr-fade">
+    <div class="rr-eyebrow">Overview</div>
+    <h1>Axle weight limits, at a glance.</h1>
+    <p>Look up the maximum weight for a single, tandem or tridem axle group in each jurisdiction.</p>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="calculator" class="btn btn-hero btn-lg">Open calculator</a>
+        <a href="jurisdictions" class="btn btn-hero-ghost btn-lg">Browse jurisdictions</a>
+    </div>
+</section>
 
-Welcome to your new app.
+<div class="rr-stats">
+    <div class="rr-card rr-stat">
+        <div class="rr-stat-icon">
+            <svg class="rr-icon" viewBox="0 0 24 24"><path d="M9 4.5 3.5 6.5v13l5.5-2 6 2 5.5-2v-13l-5.5 2z" /><path d="M9 4.5v13M15 6.5v13" /></svg>
+        </div>
+        <div>
+            <div class="rr-stat-value">@(stats?.Jurisdictions.ToString() ?? "–")</div>
+            <div class="rr-stat-label">Jurisdictions</div>
+        </div>
+    </div>
+    <div class="rr-card rr-stat">
+        <div class="rr-stat-icon amber">
+            <svg class="rr-icon" viewBox="0 0 24 24"><path d="M4 19h16M6 19V9m4 10V5m4 14v-7m4 7v-4" /></svg>
+        </div>
+        <div>
+            <div class="rr-stat-value">@(stats?.Limits.ToString() ?? "–")</div>
+            <div class="rr-stat-label">Axle limits defined</div>
+        </div>
+    </div>
+    <div class="rr-card rr-stat">
+        <div class="rr-stat-icon teal">
+            <svg class="rr-icon" viewBox="0 0 24 24"><circle cx="6" cy="16" r="2.5" /><circle cx="12" cy="16" r="2.5" /><circle cx="18" cy="16" r="2.5" /><path d="M3 10h18" /></svg>
+        </div>
+        <div>
+            <div class="rr-stat-value">@(stats?.Groups.ToString() ?? "–")</div>
+            <div class="rr-stat-label">Axle groups</div>
+        </div>
+    </div>
+</div>
+
+<div class="rr-actions">
+    <a href="calculator" class="rr-card rr-action">
+        <div class="rr-stat-icon">
+            <svg class="rr-icon" viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="2.5" /><path d="M8.5 6.5h7M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01" /></svg>
+        </div>
+        <div>
+            <h2>Weight calculator</h2>
+            <p>Pick a jurisdiction and an axle count to get the maximum weight.</p>
+        </div>
+        <svg class="rr-icon rr-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5" /></svg>
+    </a>
+    <a href="jurisdictions" class="rr-card rr-action">
+        <div class="rr-stat-icon amber">
+            <svg class="rr-icon" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
+        </div>
+        <div>
+            <h2>Jurisdictions</h2>
+            <p>Every jurisdiction in the database and how many limits each one defines.</p>
+        </div>
+        <svg class="rr-icon rr-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5" /></svg>
+    </a>
+</div>
+
+@code {
+    private record Stats(int Jurisdictions, int Limits, int Groups);
+    private Stats? stats;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        stats = new Stats(
+            await db.Jurisdictions.CountAsync(),
+            await db.AxleLimits.CountAsync(),
+            await db.AxleLimits.Select(l => l.AxleGroup).Distinct().CountAsync());
+    }
+}
