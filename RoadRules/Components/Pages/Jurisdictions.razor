@@ -35,17 +35,18 @@
         <div class="rr-table-wrap">
             <table class="rr-table">
                 <thead>
-                    <tr><th>Code</th><th>Name</th><th class="text-end">Limits defined</th></tr>
+                    <tr><th>Code</th><th>Name</th><th class="text-end">Limits defined</th><th class="text-end">History</th></tr>
                 </thead>
                 <tbody>
                     @foreach (var j in jurisdictions)
                     {
                         <tr @key="j.Id">
-                            <td><span class="rr-code">@j.Code</span></td>
+                            <td><a href="history/@j.Code" class="rr-code text-decoration-none">@j.Code</a></td>
                             <td class="rr-name">@j.Name</td>
                             <td class="text-end">
                                 <span class="rr-pill rr-pill-success"><span class="rr-dot"></span>@j.Limits.Count</span>
                             </td>
+                            <td class="text-end"><a href="history/@j.Code" class="btn btn-sm btn-outline-primary">View history</a></td>
                         </tr>
                     }
                 </tbody>

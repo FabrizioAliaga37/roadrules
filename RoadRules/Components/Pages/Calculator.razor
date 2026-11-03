@@ -53,6 +53,14 @@
                 </div>
             </div>
 
+            <div class="mb-4">
+                <label class="form-label" for="asof">As of</label>
+                <InputDate id="asof" class="form-control" @bind-Value="input.AsOf"
+                           DisplayName="As of" ParsingErrorMessage="Pick a valid date." />
+                <div class="form-text">The limit in effect on this date. Defaults to today.</div>
+                <ValidationMessage For="() => input.AsOf" />
+            </div>
+
             <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@busy">
                 @if (busy)
                 {
@@ -68,9 +76,9 @@
         {
             <div class="rr-fade" @key="result">
                 <div class="rr-result-hero">
-                    <div class="rr-result-label">Maximum for a @result.AxleGroup.ToLower() group in @NameOf(result.JurisdictionCode)</div>
+                    <div class="rr-result-label">Maximum for a @result.AxleGroup.ToLower() group in @NameOf(result.JurisdictionCode) on @resultAsOf.ToString("yyyy-MM-dd")</div>
                     <div class="rr-result-value">@result.MaxKg.ToString("N0")<span class="rr-result-unit">kg</span></div>
-                    <div class="rr-result-sub">≈ @Pounds(result.MaxKg).ToString("N0") lb</div>
+                    <div class="rr-result-sub">≈ @Pounds(result.MaxKg).ToString("N0") lb &middot; in effect since @result.EffectiveFrom.ToString("yyyy-MM-dd")</div>
 
                     <svg class="rr-truck" viewBox="0 0 300 96" role="img" aria-label="@resultAxles axle @result.AxleGroup.ToLower() group highlighted">
                         <line x1="0" y1="88" x2="300" y2="88" stroke="#c7d2fe" stroke-width="2" stroke-dasharray="10 8" />
@@ -91,9 +99,13 @@
 
                 <div class="rr-meta">
                     <div><span>Jurisdiction</span><strong>@NameOf(result.JurisdictionCode)</strong></div>
-                    <div><span>Axle group</span><strong>@result.AxleGroup</strong></div>
-                    <div><span>Axles</span><strong>@resultAxles</strong></div>
+                    <div><span>Axle group</span><strong>@result.AxleGroup (@resultAxles)</strong></div>
+                    <div><span>In effect since</span><strong>@result.EffectiveFrom.ToString("yyyy-MM-dd")</strong></div>
                 </div>
+
+                <a class="btn btn-outline-primary mt-3" href="history/@result.JurisdictionCode">
+                    View @result.JurisdictionCode limit history
+                </a>
             </div>
         }
         else if (error is not null)
@@ -129,6 +141,7 @@
     private List<Jurisdiction> jurisdictions = new();
     private WeightResult? result;
     private int resultAxles;
+    private DateOnly resultAsOf;
     private string? error;
     private bool busy;
 
@@ -146,8 +159,9 @@
         busy = true;
         try
         {
-            result = await Calc.CalculateAsync(input.JurisdictionCode, input.AxleCount);
+            result = await Calc.CalculateAsync(input.JurisdictionCode, input.AxleCount, input.AsOf);
             resultAxles = input.AxleCount;
+            resultAsOf = input.AsOf;
         }
         catch (Exception ex) when (ex is KeyNotFoundException or ArgumentOutOfRangeException)
         {
@@ -194,5 +208,7 @@
 
         [Range(1, 3, ErrorMessage = "Axle count must be between 1 and 3.")]
         public int AxleCount { get; set; } = 1;
+
+        public DateOnly AsOf { get; set; } = DateOnly.FromDateTime(DateTime.Today);
     }
 }

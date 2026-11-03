@@ -2,5 +2,7 @@ namespace RoadRules.Services;
 
 public interface IWeightCalculator
 {
-    Task<WeightResult> CalculateAsync(string jurisdictionCode, int axleCount);
+    Task<IReadOnlyList<LimitRecord>> EffectiveLimitsAsync(string jurisdictionCode, DateOnly asOf);
+
+    Task<WeightResult> CalculateAsync(string jurisdictionCode, int axleCount, DateOnly asOf);
 }
