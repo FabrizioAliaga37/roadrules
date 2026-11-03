@@ -1,23 +1,64 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
 
-<div class="page">
-    <div class="sidebar">
+<div class="rr-shell">
+    <aside class="rr-sidebar">
         <NavMenu />
+    </aside>
+
+    <div class="rr-main">
+        <header class="rr-topbar">
+            <nav class="rr-crumbs" aria-label="Breadcrumb">
+                <span>RoadRules</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+                <strong>@Section</strong>
+            </nav>
+            <span class="rr-pill rr-pill-warn"><span class="rr-dot"></span>Illustrative data, not real limits</span>
+        </header>
+
+        <main class="rr-content">
+            @* Catches anything a page throws (a database error, for example) and shows a
+               message in place of the page, instead of only the reload bar. *@
+            <ErrorBoundary @ref="errorBoundary">
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent Context="ex">
+                    <div class="rr-card rr-card-body rr-fade" style="max-width: 36rem">
+                        <div class="rr-alert-error">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v4.5M12 16h.01" /></svg>
+                            <div>
+                                <strong class="d-block mb-1">Something went wrong</strong>
+                                This page could not be shown. The details are in the application log.
+                            </div>
+                        </div>
+                        <button class="btn btn-outline-primary mt-3" @onclick="Recover">Try again</button>
+                    </div>
+                </ErrorContent>
+            </ErrorBoundary>
+        </main>
     </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
 </div>
 
 <div id="blazor-error-ui">
-    An unhandled error has occurred.
+    <span>An unhandled error has occurred.</span>
     <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
+    <a class="dismiss" aria-label="Dismiss">✕</a>
 </div>
+
+@code {
+    private ErrorBoundary? errorBoundary;
+
+    private string Section => Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].TrimEnd('/') switch
+    {
+        "" => "Overview",
+        "jurisdictions" => "Jurisdictions",
+        "calculator" => "Weight calculator",
+        _ => "Not found"
+    };
+
+    // Navigating to another page clears a previous error.
+    protected override void OnParametersSet() => errorBoundary?.Recover();
+
+    private void Recover() => errorBoundary?.Recover();
+}

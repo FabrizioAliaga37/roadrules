@@ -4,30 +4,55 @@
 @inject IDbContextFactory<AppDbContext> DbFactory
 
 <PageTitle>Jurisdictions</PageTitle>
-<h3>Jurisdictions</h3>
 
-@if (jurisdictions is null)
-{
-    <p>Loading...</p>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr><th>Code</th><th>Name</th><th>Limits defined</th></tr>
-        </thead>
-        <tbody>
-            @foreach (var j in jurisdictions)
-            {
-                <tr @key="j.Id">
-                    <td>@j.Code</td>
-                    <td>@j.Name</td>
-                    <td>@j.Limits.Count</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+<div class="rr-page-header">
+    <div>
+        <div class="rr-eyebrow">Reference</div>
+        <h1 class="rr-title">Jurisdictions</h1>
+        <p class="rr-subtitle">Each jurisdiction in the database and the number of axle limits defined for it.</p>
+    </div>
+    <a href="calculator" class="btn btn-primary">Open calculator</a>
+</div>
+
+<div class="rr-card rr-fade">
+    <div class="rr-card-header">
+        <h2 class="rr-card-title">All jurisdictions</h2>
+        @if (jurisdictions is not null)
+        {
+            <span class="rr-pill rr-pill-primary">@jurisdictions.Count total</span>
+        }
+    </div>
+
+    @if (jurisdictions is null)
+    {
+        <div class="rr-empty">
+            <div class="spinner-border text-secondary" role="status"></div>
+            <div class="mt-3">Loading...</div>
+        </div>
+    }
+    else
+    {
+        <div class="rr-table-wrap">
+            <table class="rr-table">
+                <thead>
+                    <tr><th>Code</th><th>Name</th><th class="text-end">Limits defined</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var j in jurisdictions)
+                    {
+                        <tr @key="j.Id">
+                            <td><span class="rr-code">@j.Code</span></td>
+                            <td class="rr-name">@j.Name</td>
+                            <td class="text-end">
+                                <span class="rr-pill rr-pill-success"><span class="rr-dot"></span>@j.Limits.Count</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
 
 @code {
     private List<Jurisdiction>? jurisdictions;

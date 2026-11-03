@@ -1,0 +1,198 @@
+@page "/calculator"
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.EntityFrameworkCore
+@using RoadRules.Data
+@using RoadRules.Services
+@inject IDbContextFactory<AppDbContext> DbFactory
+@* Named Calc, not Calculator: this component's class is already called Calculator (CS0542). *@
+@inject IWeightCalculator Calc
+
+<PageTitle>Weight calculator</PageTitle>
+
+<div class="rr-page-header">
+    <div>
+        <div class="rr-eyebrow">Tools</div>
+        <h1 class="rr-title">Weight calculator</h1>
+        <p class="rr-subtitle">Maximum weight for an axle group in a jurisdiction.</p>
+    </div>
+</div>
+
+<div class="rr-calc">
+    <div class="rr-card rr-card-body rr-fade">
+        <EditForm EditContext="editContext" OnValidSubmit="Calculate" OnInvalidSubmit="ClearResult" FormName="calculator">
+            <DataAnnotationsValidator />
+
+            <div class="mb-4">
+                <label class="form-label" for="jurisdiction">Jurisdiction</label>
+                <InputSelect id="jurisdiction" class="form-select" @bind-Value="input.JurisdictionCode">
+                    <option value="">Select a jurisdiction...</option>
+                    @foreach (var j in jurisdictions)
+                    {
+                        <option value="@j.Code">@j.Name</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => input.JurisdictionCode" />
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label" for="axles">Axles in the group</label>
+                <InputNumber id="axles" class="form-control" @bind-Value="input.AxleCount"
+                             DisplayName="Axle count" ParsingErrorMessage="Axle count must be a whole number." />
+                <ValidationMessage For="() => input.AxleCount" />
+
+                <div class="rr-segment" role="group" aria-label="Common axle groups">
+                    @foreach (var (count, name) in Groups)
+                    {
+                        <button type="button" class="@(input.AxleCount == count ? "active" : null)"
+                                aria-pressed="@(input.AxleCount == count)" @onclick="() => PickAxles(count)">
+                            <span class="rr-axle-dots">@for (var i = 0; i < count; i++) { <i></i> }</span>
+                            @name
+                            <small>@count axle@(count == 1 ? "" : "s")</small>
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@busy">
+                @if (busy)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                }
+                Calculate
+            </button>
+        </EditForm>
+    </div>
+
+    <div class="rr-card rr-card-body rr-result">
+        @if (result is not null)
+        {
+            <div class="rr-fade" @key="result">
+                <div class="rr-result-hero">
+                    <div class="rr-result-label">Maximum for a @result.AxleGroup.ToLower() group in @NameOf(result.JurisdictionCode)</div>
+                    <div class="rr-result-value">@result.MaxKg.ToString("N0")<span class="rr-result-unit">kg</span></div>
+                    <div class="rr-result-sub">≈ @Pounds(result.MaxKg).ToString("N0") lb</div>
+
+                    <svg class="rr-truck" viewBox="0 0 300 96" role="img" aria-label="@resultAxles axle @result.AxleGroup.ToLower() group highlighted">
+                        <line x1="0" y1="88" x2="300" y2="88" stroke="#c7d2fe" stroke-width="2" stroke-dasharray="10 8" />
+                        <rect x="8" y="12" width="206" height="48" rx="7" fill="#fff" stroke="#c7d2fe" stroke-width="2" />
+                        <rect x="222" y="30" width="58" height="34" rx="8" fill="#fff" stroke="#c7d2fe" stroke-width="2" />
+                        <path d="M256 30v-8a6 6 0 0 1 6-6h6l12 14" fill="none" stroke="#c7d2fe" stroke-width="2" stroke-linejoin="round" />
+                        <rect x="208" y="54" width="20" height="6" rx="2" fill="#c7d2fe" />
+                        <circle cx="262" cy="74" r="12" fill="#e0e7ff" /><circle cx="262" cy="74" r="4" fill="#fff" />
+                        @{ var n = resultAxles; var start = 66 - (n - 1) * 14; }
+                        @for (var i = 0; i < n; i++)
+                        {
+                            var cx = start + i * 28;
+                            <circle cx="@cx" cy="74" r="12" fill="#4f46e5" />
+                            <circle cx="@cx" cy="74" r="4" fill="#fff" />
+                        }
+                    </svg>
+                </div>
+
+                <div class="rr-meta">
+                    <div><span>Jurisdiction</span><strong>@NameOf(result.JurisdictionCode)</strong></div>
+                    <div><span>Axle group</span><strong>@result.AxleGroup</strong></div>
+                    <div><span>Axles</span><strong>@resultAxles</strong></div>
+                </div>
+            </div>
+        }
+        else if (error is not null)
+        {
+            <div class="rr-empty rr-fade">
+                <div class="rr-alert-error text-start w-100">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v4.5M12 16h.01" /></svg>
+                    <div role="alert">
+                        <strong class="d-block mb-1">No limit found</strong>
+                        @error
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="rr-empty">
+                <div class="rr-empty-icon">
+                    <svg class="rr-icon" viewBox="0 0 24 24"><path d="M2.5 6.5h11v9h-11z" /><path d="M13.5 9.5h4l3.5 3.5v2.5h-7.5" /><circle cx="6.5" cy="17.5" r="2" /><circle cx="17" cy="17.5" r="2" /></svg>
+                </div>
+                <strong>No result yet</strong>
+                <span class="mt-1">Choose a jurisdiction and an axle group, then press Calculate.</span>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private static readonly (int Count, string Name)[] Groups = [(1, "Single"), (2, "Tandem"), (3, "Tridem")];
+
+    private CalculatorInput input = new();
+    private EditContext editContext = default!;
+    private List<Jurisdiction> jurisdictions = new();
+    private WeightResult? result;
+    private int resultAxles;
+    private string? error;
+    private bool busy;
+
+    protected override void OnInitialized() => editContext = new EditContext(input);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        jurisdictions = await db.Jurisdictions.OrderBy(j => j.Name).ToListAsync();
+    }
+
+    private async Task Calculate()
+    {
+        ClearResult();
+        busy = true;
+        try
+        {
+            result = await Calc.CalculateAsync(input.JurisdictionCode, input.AxleCount);
+            resultAxles = input.AxleCount;
+        }
+        catch (Exception ex) when (ex is KeyNotFoundException or ArgumentOutOfRangeException)
+        {
+            error = CleanMessage(ex);
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // Without this, a result from an earlier valid submit stays on screen
+    // next to the validation message.
+    private void ClearResult()
+    {
+        result = null;
+        error = null;
+    }
+
+    private void PickAxles(int count)
+    {
+        input.AxleCount = count;
+        // A fresh EditContext drops any "must be a whole number" message the number
+        // input is still holding from earlier text; the form re-validates on submit.
+        editContext = new EditContext(input);
+        editContext.NotifyFieldChanged(FieldIdentifier.Create(() => input.AxleCount));
+    }
+
+    private string NameOf(string code) =>
+        jurisdictions.FirstOrDefault(j => j.Code == code)?.Name ?? code;
+
+    private static int Pounds(int kg) => (int)Math.Round(kg * 2.20462);
+
+    // ArgumentException.Message ends with " (Parameter 'axleCount')"; users don't need that part.
+    private static string CleanMessage(Exception ex) =>
+        ex is ArgumentException { ParamName: not null } ae
+            ? ae.Message.Replace($" (Parameter '{ae.ParamName}')", "")
+            : ex.Message;
+
+    public class CalculatorInput
+    {
+        [Required(ErrorMessage = "Pick a jurisdiction.")]
+        public string JurisdictionCode { get; set; } = "";
+
+        [Range(1, 3, ErrorMessage = "Axle count must be between 1 and 3.")]
+        public int AxleCount { get; set; } = 1;
+    }
+}

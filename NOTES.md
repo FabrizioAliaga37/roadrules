@@ -34,7 +34,73 @@
 - Why: UseHttpsRedirection is in the template but no https endpoint was configured.
 - Fix: none needed. Harmless here, and expected again in the container (step 8).
 
+**Database moved to App_Data/**
+- Change: connection string is now `Data Source=App_Data/roadrules.db` instead of the guide's `roadrules.db`.
+- Why: keeps the database file out of the project root.
+- Catch: SQLite creates the .db file but not a missing folder ("unable to open database file"), so Program.cs calls `Directory.CreateDirectory` on `App_Data` before `Migrate()`. Temporary: goes away with SQLite in step 7.
+- Checked: deleted the db and the folder, ran the app, and it rebuilt both from the migration (5 / 15 / 252,300). The file stays git-ignored, as step 9 asks.
+
+**Template pages removed**
+- Removed Counter.razor and Weather.razor and their nav links once the step 2 interactivity check was done. Error.razor stays (UseExceptionHandler points at it).
+
 **Checked working**
 - /counter renders with the Interactive Server markers and blazor.web.js (`--all-interactive` puts @rendermode on Routes in App.razor).
 - /jurisdictions shows 5 rows (AB, BC, MB, ON, QC), each with 3 limits.
 - The Calculator nav link 404s until the page is added in evening 2. That's expected, since the guide adds both links in step 3.
+
+## Evening 2 - calculator service, page, tests
+
+**Guide's Calculator.razor does not compile**
+- Saw: `error CS0542: 'Calculator': member names cannot be the same as their enclosing type`.
+- Why: a Razor file becomes a class named after the file, so Calculator.razor is class `Calculator`, and `@inject IWeightCalculator Calculator` adds a property with the same name.
+- Fix: `@inject IWeightCalculator Calc` and `await Calc.CalculateAsync(...)`. Nothing else changed.
+
+**Service error message has a suffix**
+- Saw: with the Range temporarily set to 1-10, Ontario + 5 axles shows "No limit is defined for 5 axles in ON. (Parameter 'axleCount')".
+- Why: `ArgumentOutOfRangeException.Message` appends the parameter name. Left as written in the guide.
+
+**Old result stays on screen when validation fails**
+- Saw: calculate Ontario + 2 (17,000 kg), then enter 5: the validation message appears but the 17,000 line is still shown underneath.
+- Why: `result` is only cleared inside `Calculate`, and `OnValidSubmit` doesn't fire when validation fails. Left as written in the guide; an `OnInvalidSubmit` that clears it would fix it.
+
+**UI and error handling pass (beyond the guide)**
+- Saw: the pages were plain template output: "Hello, world!" on Home, a Microsoft "About" link, a full-width form, black validation text, a blank page for unknown URLs, and only the yellow "An unhandled error has occurred" bar when a page throws.
+- Changed: Home has two cards linking to the pages. Jurisdictions and Calculator sit in cards. The calculator shows a message under each field, a "whole number" message instead of "The AxleCount field must be a number.", the result in a green box with the jurisdiction name, and service errors without the "(Parameter 'axleCount')" suffix. `OnInvalidSubmit` clears an old result. There's a "Page not found" page (Router `NotFound` plus `UseStatusCodePagesWithReExecute("/not-found")`). An `ErrorBoundary` in MainLayout shows "Something went wrong" with a Try again button.
+- Kept: the same fields, Range(1, 3), service calls and exception types, so the steps and tests in the guide still apply.
+- Gotcha: `class="..."` on `<ValidationMessage>` replaces its `validation-message` class, so the text loses its red colour. Styled in app.css instead.
+- Checked: renamed the Jurisdictions table while the app was running. The page showed "Something went wrong", and Try again worked once the table was back.
+
+**No sidebar, and "An unhandled error has occurred" on every page**
+- Saw: on Windows, the nav showed as plain links with a stray checkbox at the top left, and the yellow error bar was always visible, with no exception in the log.
+- Why: the app was running outside Development. The launch profiles set Development, but running RoadRules.exe or `--no-launch-profile` skips them. Outside Development a normal build doesn't serve `RoadRules.styles.css` (the scoped CSS from MainLayout.razor.css and NavMenu.razor.css), so it returns 404. That file is also where `#blazor-error-ui { display: none }` lives, so the bar showed even though nothing had failed.
+- Fix: `builder.WebHost.UseStaticWebAssets()` in Program.cs. Checked: in Production all CSS returns 200, the sidebar is back and the bar is hidden. Published output (the Docker image in step 8) already includes the file.
+
+**Scoped CSS ids differ between Windows and WSL builds**
+- Saw: even with UseStaticWebAssets and RoadRules.styles.css returning 200, there was still no sidebar and the error bar was still showing.
+- Why: CSS isolation tags elements with a hashed scope id (`b-xxxxxxxxxx`), and the hash comes out different on Windows and Linux. obj/ is shared, and the Windows build reused the scoped CSS a WSL build had generated. The dll used `b-1kxk1zgr16`/`b-xdie7x66ip`, the CSS used `b-dgter85r8x`/`b-uht0d7c2mp`, so no rule matched.
+- Fix: fixed ids in RoadRules.csproj (`CssScope="rr-main-layout"` and `"rr-nav-menu"`), and deleted obj/Debug/net8.0/scopedcss. Both sides now produce the same ids.
+
+**Running from Windows and WSL at the same time**
+- Saw: `SQLite Error 10: 'disk I/O error'` at `Migrate()`, and `MSB3021 ... RoadRules.dll ... Access to the path is denied` on build.
+- Why: the app was already running from Windows, which locks bin/RoadRules.dll and roadrules.db. SQLite locking doesn't work across the Windows/WSL boundary.
+- Fix: run only one copy at a time against App_Data/roadrules.db.
+
+**Checked working**
+- `dotnet test`: 6 passed (3 Theory cases, 3 Facts). Changed the fake's tandem to 18000: 1 failed (Expected 17000, Actual 18000). Put it back: 6 passed.
+- /calculator in a browser: no jurisdiction shows "Pick a jurisdiction."; Ontario + 2 axles gives 17,000 kg; Ontario + 5 is blocked by "Axle count must be between 1 and 3."; Range temporarily 1-10 + 5 axles shows the service's own message, then put back to 1-3.
+- Dropdown lists the 5 jurisdictions by name (Alberta first). Nav: Home, Jurisdictions, Calculator; the Calculator link no longer 404s.
+
+**Redesign**
+- Asked for a more modern UI. Changed: dark sidebar with logo and icons (hamburger menu on mobile), a top bar with breadcrumb and an "illustrative data" badge, and a gradient header on Overview with live counts from the database (jurisdictions, limits, axle groups). The Jurisdictions table is in a card with code badges. The calculator has two columns: the form, with Single/Tandem/Tridem buttons that fill in the axle count, and a result panel with the kg value, the pounds equivalent, and a truck diagram with the axle group highlighted. 404 and error states match the rest.
+- Kept: same pages, fields, Range(1, 3), Required, service calls and exception handling. The 6 tests still pass. Page titles are now `h1` (the template's FocusOnNavigate looks for `h1`). The Bootstrap in the template is 5.1, so the styling is plain CSS in app.css rather than 5.2+ variables.
+- `#blazor-error-ui` styling moved to app.css, so the bar stays hidden even if the scoped CSS bundle fails again.
+- Gotcha: after typing something that isn't a number, InputNumber keeps its "must be a whole number" message, even after the value is set from code. Clicking a Single/Tandem/Tridem button creates a fresh EditContext to clear it. A `@key` on the input did not clear it.
+- Build hygiene: Visual Studio (Windows) and WSL must not build into the same obj/. Its paths are OS-specific (WSL build: `CS0234 ... 'Components' does not exist`, from D:/ paths in the generated editorconfig). Pick one side per build, or build a copy.
+
+**Fixed table headers (project-wide rule)**
+- Requirement: every table's header row stays visible while scrolling.
+- How: wrap the table in `<div class="rr-table-wrap">`. The wrapper is the scroll box (capped at `max(320px, 100vh - 300px)`), and `thead th` inside it is `position: sticky; top: 0`. It works for both `.rr-table` and Bootstrap `.table`. The header line is an inset box-shadow, because a border on a sticky cell scrolls away, and Bootstrap 5.1's 2px line on top of tbody is removed.
+- Why a wrapper and not page-level sticky: sticky sticks to the nearest scrolling ancestor, and the horizontal-scroll wrapper narrow screens need is one, so a header sticky to the page would never stick.
+- Applied: Jurisdictions. **To do in steps 11-12:** the guide's new tables (`<table class="table">` at the history, comparison and admin steps) need the same wrapper.
+- Checked: with 45 jurisdictions, and a 60-row Bootstrap table on a test page that isn't committed, at 1440px and 390px: after scrolling the table, the header stays in place and is the top element at that spot.
+
