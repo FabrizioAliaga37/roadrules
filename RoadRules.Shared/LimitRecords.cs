@@ -1,4 +1,4 @@
-namespace RoadRules.Services;
+namespace RoadRules.Shared;
 
 public record LimitRecord(string AxleGroup, int AxleCount, int MaxKg, DateOnly EffectiveFrom);
 

@@ -32,7 +32,9 @@
                                 This page could not be shown. The details are in the application log.
                             </div>
                         </div>
-                        <button class="btn btn-outline-primary mt-3" @onclick="Recover">Try again</button>
+                        @* A link, not an @onclick button: the layout renders statically since
+                           step 14, so a button would do nothing. *@
+                        <a class="btn btn-outline-primary mt-3" href="@Nav.Uri" data-enhance-nav="false">Try again</a>
                     </div>
                 </ErrorContent>
             </ErrorBoundary>
@@ -54,6 +56,7 @@
         "" => "Overview",
         "jurisdictions" => "Jurisdictions",
         "calculator" => "Weight calculator",
+        "calculator-api" => "Weight calculator (API)",
         "compare" => "Compare",
         var p when p.StartsWith("history/") => "Limit history",
         _ => "Not found"
@@ -61,6 +64,4 @@
 
     // Navigating to another page clears a previous error.
     protected override void OnParametersSet() => errorBoundary?.Recover();
-
-    private void Recover() => errorBoundary?.Recover();
 }

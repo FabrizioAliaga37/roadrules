@@ -1,3 +1,5 @@
+using RoadRules.Shared;
+
 namespace RoadRules.Services;
 
 public class WeightCalculator(ILimitSource source) : IWeightCalculator

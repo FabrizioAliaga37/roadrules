@@ -1,3 +1,5 @@
+using RoadRules.Shared;
+
 namespace RoadRules.Services;
 
 public interface IWeightCalculator

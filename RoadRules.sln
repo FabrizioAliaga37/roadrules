@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RoadRules", "RoadRules\Road
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RoadRules.Tests", "RoadRules.Tests\RoadRules.Tests.csproj", "{26E96369-F6DC-4105-AAF9-C36B776BB5FC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RoadRules.Client", "RoadRules.Client\RoadRules.Client.csproj", "{2CEC8B3B-8EC6-49D1-A5A4-31E17F21301F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RoadRules.Shared", "RoadRules.Shared\RoadRules.Shared.csproj", "{6587E0BE-9880-40C1-B929-403A4BE2595D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +28,13 @@ Global
 		{26E96369-F6DC-4105-AAF9-C36B776BB5FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{26E96369-F6DC-4105-AAF9-C36B776BB5FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{26E96369-F6DC-4105-AAF9-C36B776BB5FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CEC8B3B-8EC6-49D1-A5A4-31E17F21301F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CEC8B3B-8EC6-49D1-A5A4-31E17F21301F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CEC8B3B-8EC6-49D1-A5A4-31E17F21301F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CEC8B3B-8EC6-49D1-A5A4-31E17F21301F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6587E0BE-9880-40C1-B929-403A4BE2595D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6587E0BE-9880-40C1-B929-403A4BE2595D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6587E0BE-9880-40C1-B929-403A4BE2595D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6587E0BE-9880-40C1-B929-403A4BE2595D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

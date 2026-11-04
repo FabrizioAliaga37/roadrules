@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RoadRules.Data;
+using RoadRules.Shared;
 
 namespace RoadRules.Services;
 
