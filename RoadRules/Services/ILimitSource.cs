@@ -1,3 +1,5 @@
+using RoadRules.Shared;
+
 namespace RoadRules.Services;
 
 // Returns every row for a jurisdiction, history included; it does no selection.

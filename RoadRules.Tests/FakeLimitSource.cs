@@ -1,4 +1,5 @@
 using RoadRules.Services;
+using RoadRules.Shared;
 
 namespace RoadRules.Tests;
 

@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RoadRules\RoadRules.csproj" />
+    <ProjectReference Include="..\RoadRules.Shared\RoadRules.Shared.csproj" />
   </ItemGroup>
 
 </Project>

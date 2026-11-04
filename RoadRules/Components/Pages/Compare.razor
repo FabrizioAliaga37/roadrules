@@ -1,7 +1,9 @@
 @page "/compare"
+@rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @using RoadRules.Data
 @using RoadRules.Services
+@using RoadRules.Shared
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject IWeightCalculator Calculator
 

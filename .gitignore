@@ -15,3 +15,7 @@
 .idea/
 *.user
 *.suo
+/RoadRules.Client/bin
+/RoadRules.Client/obj
+/RoadRules.Shared/bin
+/RoadRules.Shared/obj

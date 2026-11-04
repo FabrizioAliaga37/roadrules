@@ -1,8 +1,10 @@
 @page "/calculator"
+@rendermode InteractiveServer
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.EntityFrameworkCore
 @using RoadRules.Data
 @using RoadRules.Services
+@using RoadRules.Shared
 @inject IDbContextFactory<AppDbContext> DbFactory
 @* Named Calc, not Calculator: this component's class is already called Calculator (CS0542). *@
 @inject IWeightCalculator Calc
